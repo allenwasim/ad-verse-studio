@@ -23,15 +23,30 @@ export type Screen = {
   averageFootfall?: number;
 };
 
+export type MediaMetadata = {
+  name: string;
+  size: number;
+  type: string;
+  lastModified: number;
+  dimensions?: string;
+  duration?: number;
+  thumbnail?: string;
+  originalName?: string;
+};
+
 export type Campaign = {
   id: string;
   campaignName: string;
   clientId: string; // reference to Lead ID
   category?: string;
   mediaType: 'image' | 'video';
-  mediaURL: string;
-  
-  slots: number; 
+  mediaURL: string; // Legacy field for backward compatibility
+  mediaMetadata?: MediaMetadata;
+  mediaStoragePath?: string;
+  mediaUrl?: string; // New field from Firebase Storage
+  mediaThumbnailUrl?: string;
+
+  slots: number;
 
   assignedScreens: string[]; // array of Screen IDs
 

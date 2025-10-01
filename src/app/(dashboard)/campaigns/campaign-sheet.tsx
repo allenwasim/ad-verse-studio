@@ -29,6 +29,9 @@ import { MultiSelect } from '@/components/multi-select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
 import imageCompression from 'browser-image-compression';
+import { MediaUpload } from '@/components/media-upload';
+import { VideoPlayer } from '@/components/video-player';
+import { MediaUploadResult } from '@/lib/storage';
 
 type CampaignSheetProps = {
   trigger: React.ReactNode;
@@ -60,6 +63,10 @@ export function CampaignSheet({
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
   const [mediaURL, setMediaURL] = useState<string | undefined>(campaign?.mediaURL);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(campaign?.mediaType || 'image');
+  const [mediaStoragePath, setMediaStoragePath] = useState<string | undefined>(campaign?.mediaStoragePath);
+  const [mediaThumbnailUrl, setMediaThumbnailUrl] = useState<string | undefined>(campaign?.mediaThumbnailUrl);
+  const [mediaMetadata, setMediaMetadata] = useState<any>(campaign?.mediaMetadata);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isChecking, startTransition] = useTransition();
 
@@ -71,8 +78,29 @@ export function CampaignSheet({
       setEndDate(campaign?.endDate ? new Date(campaign.endDate) : undefined);
       setSelectedScreens(campaign?.assignedScreens || []);
       setMediaURL(campaign?.mediaURL);
+      setMediaType(campaign?.mediaType || 'image');
+      setMediaStoragePath(campaign?.mediaStoragePath);
+      setMediaThumbnailUrl(campaign?.mediaThumbnailUrl);
+      setMediaMetadata(campaign?.mediaMetadata);
     }
   }, [open, campaign]);
+
+  const handleMediaUploaded = (result: MediaUploadResult) => {
+    const isVideo = result.metadata.type.startsWith('video/');
+    setMediaType(isVideo ? 'video' : 'image');
+    setMediaURL(result.downloadURL);
+    setMediaStoragePath(result.storagePath);
+    setMediaThumbnailUrl(result.thumbnailURL);
+    setMediaMetadata(result.metadata);
+  };
+
+  const handleMediaRemoved = () => {
+    setMediaType('image');
+    setMediaURL(undefined);
+    setMediaStoragePath(undefined);
+    setMediaThumbnailUrl(undefined);
+    setMediaMetadata(undefined);
+  };
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -85,7 +113,7 @@ export function CampaignSheet({
         reader.onloadend = () => setMediaURL(reader.result as string);
         reader.readAsDataURL(compressedFile);
       } catch (error) {
-        toast({ variant: 'destructive', title: 'Image Error', description: 'Could not process image.'});
+        toast({ variant: 'destructive', title: 'Media Error', description: 'Could not process media.'});
       }
     }
   };
@@ -128,8 +156,20 @@ export function CampaignSheet({
     if (mediaURL) {
         newFormData.set('mediaURL', mediaURL);
     }
-    
-    newFormData.set('mediaType', 'image');
+
+    newFormData.set('mediaType', mediaType);
+
+    if (mediaStoragePath) {
+        newFormData.set('mediaStoragePath', mediaStoragePath);
+    }
+
+    if (mediaThumbnailUrl) {
+        newFormData.set('mediaThumbnailUrl', mediaThumbnailUrl);
+    }
+
+    if (mediaMetadata) {
+        newFormData.set('mediaMetadata', JSON.stringify(mediaMetadata));
+    }
 
     await saveCampaign(newFormData);
     toast({
@@ -213,30 +253,19 @@ export function CampaignSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>Ad Creative</Label>
-            <div className="flex items-center gap-4">
-                <div className="w-24 h-24 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                    {mediaURL ? (
-                        <Image src={mediaURL} alt="Ad preview" width={96} height={96} className="object-cover w-full h-full" />
-                    ) : (
-                        <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                            <Upload className="h-4 w-4"/>
-                            <span>Upload</span>
-                        </div>
-                    )}
-                </div>
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    Upload Image
-                </Button>
-                <Input 
-                    ref={fileInputRef}
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleImageChange}
-                    name="mediaFile"
-                />
-            </div>
+            <Label>Campaign Media</Label>
+            <MediaUpload
+              onMediaUploaded={handleMediaUploaded}
+              onMediaRemoved={handleMediaRemoved}
+              campaignId={campaign?.id || 'temp-campaign'}
+              acceptedTypes="both"
+              maxFileSizeMB={50}
+              initialMedia={mediaURL ? {
+                url: mediaURL,
+                type: mediaType,
+                metadata: mediaMetadata
+              } : undefined}
+            />
           </div>
 
           <div className="space-y-1">
