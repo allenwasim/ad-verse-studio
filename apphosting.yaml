@@ -1,0 +1,11 @@
+run: npm run build
+runtime: nodejs20
+
+# Firebase App Hosting config
+appHosting:
+    # Min instances to keep alive
+    minInstances: 0
+    # Max instances to scale to
+    maxInstances: 10
+    # How many concurrent requests to send to an instance
+    concurrency: 100

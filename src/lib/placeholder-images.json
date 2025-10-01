@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "ad1",
+      "description": "Ad for a local cafe",
+      "imageUrl": "https://images.unsplash.com/photo-1464979681340-bdd28a61699e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjb2ZmZWUlMjBzaG9wfGVufDB8fHx8MTc1ODY5OTQ1Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coffee shop"
+    },
+    {
+      "id": "ad2",
+      "description": "Ad for a real estate agency",
+      "imageUrl": "https://images.unsplash.com/photo-1654200150895-5be29dc62762?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bW9kZXJuJTIwaG91c2V8ZW58MHx8fHwxNzU4NjczOTI5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "modern house"
+    },
+    {
+      "id": "ad3",
+      "description": "Ad for a new smartphone",
+      "imageUrl": "https://images.unsplash.com/photo-1658036679738-c0fa1b57d33b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzbWFydHBob25lJTIwdGVjaHxlbnwwfHx8fDE3NTg2OTk0NTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone tech"
+    },
+    {
+      "id": "ad4",
+      "description": "Ad for a clothing brand",
+      "imageUrl": "https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmYXNoaW9uJTIwc3RvcmV8ZW58MHx8fHwxNzU4Njk1OTYwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fashion store"
+    },
+    {
+      "id": "ad5",
+      "description": "Ad for a local gym",
+      "imageUrl": "https://images.unsplash.com/photo-1549476464-37392f717541?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxneW0lMjBmaXRuZXNzfGVufDB8fHx8MTc1ODYwNjc5OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gym fitness"
+    }
+  ]
+}
