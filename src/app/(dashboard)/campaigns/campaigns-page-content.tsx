@@ -74,73 +74,6 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
     }
   }, []);
 
-  const renderMediaThumbnail = useCallback((campaign: Campaign) => {
-    const mediaInfo = MediaUtils.getMediaDisplayInfo(campaign);
-
-    if (!mediaInfo.displayUrl) {
-      return (
-        <div className="w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <div className="text-sm">No media uploaded</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (campaign.mediaType === 'video') {
-      return (
-        <div className="relative w-[150px] h-[150px]">
-          <VideoPlayer
-            src={mediaInfo.displayUrl}
-            poster={mediaInfo.thumbnailUrl}
-            compact={true}
-            width={150}
-            height={150}
-            className="rounded-lg border border-border"
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={() => handleImageInteraction(mediaInfo.displayUrl, campaign.campaignName)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleImageInteraction(mediaInfo.displayUrl, campaign.campaignName);
-          }
-        }}
-      >
-        <Image
-          src={mediaInfo.displayUrl}
-          alt={`${campaign.campaignName} media`}
-          width={150}
-          height={150}
-          className="rounded-lg border border-border object-cover pointer-events-none"
-          onError={(e) => {
-            console.error('Media failed to load:', mediaInfo.displayUrl);
-            e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-          }}
-        />
-        <div className="text-xs text-muted-foreground mt-1 text-center">
-          {mediaInfo.isDataUrl ? 'Click to download' : 'Click to view full size'}
-        </div>
-        <div className="hidden w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <div className="text-sm">Failed to load</div>
-          </div>
-        </div>
-      </div>
-    );
-  }, [handleMediaInteraction]);
-
   const handleMediaInteraction = useCallback((url: string | undefined, campaignName: string) => {
     if (!url) {
       console.warn('No URL provided for media');
@@ -150,7 +83,7 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
     if (isDataUrl(url)) {
       // For Data URLs, download the media
       const filename = `${campaignName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.jpg`;
-      downloadImage(url, filename);
+      downloadMedia(url, filename);
     } else {
       // For regular URLs, try to open in new tab
       try {
@@ -183,6 +116,73 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
       }
     }
   }, [downloadMedia, copyMediaToClipboard]);
+
+  const renderMediaThumbnail = useCallback((campaign: Campaign) => {
+    const mediaInfo = MediaUtils.getMediaDisplayInfo(campaign);
+
+    if (!mediaInfo.displayUrl) {
+      return (
+        <div className="w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
+          <div className="text-center">
+            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <div className="text-sm">No media uploaded</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (campaign.mediaType === 'video') {
+      return (
+        <div className="relative w-[150px] h-[150px]">
+          <VideoPlayer
+            src={mediaInfo.displayUrl}
+            poster={mediaInfo.thumbnailUrl}
+            compact={true}
+            width={150}
+            height={150}
+            className="rounded-lg border border-border"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={() => handleMediaInteraction(mediaInfo.displayUrl, campaign.campaignName)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleMediaInteraction(mediaInfo.displayUrl, campaign.campaignName);
+          }
+        }}
+      >
+        <Image
+          src={mediaInfo.displayUrl}
+          alt={`${campaign.campaignName} media`}
+          width={150}
+          height={150}
+          className="rounded-lg border border-border object-cover pointer-events-none"
+          onError={(e) => {
+            console.error('Media failed to load:', mediaInfo.displayUrl);
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+        <div className="text-xs text-muted-foreground mt-1 text-center">
+          {mediaInfo.isDataUrl ? 'Click to download' : 'Click to view full size'}
+        </div>
+        <div className="hidden w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
+          <div className="text-center">
+            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <div className="text-sm">Failed to load</div>
+          </div>
+        </div>
+      </div>
+    );
+  }, [handleMediaInteraction]);
 
   const campaigns = allCampaigns.filter(campaign => {
     if (!search) return true;

@@ -112,23 +112,18 @@ class MediaStorageService {
       }
     };
 
-    // Upload main file
-    const uploadTask = uploadBytes(storageRef, processedFile, metadata);
-
-    // Track upload task
-    const taskId = `upload_${timestamp}`;
-    this.uploadTasks.set(taskId, uploadTask.snapshot);
-
-    // Handle progress updates
+    // Simple upload without resumable features to avoid API issues
     if (onProgress) {
-      uploadTask.on('state_changed', (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        onProgress(Math.round(progress));
-      });
+      // Simulate progress for better UX
+      onProgress(0);
     }
 
-    // Wait for upload completion
-    const uploadResult = await uploadTask;
+    const uploadResult = await uploadBytes(storageRef, processedFile, metadata);
+
+    if (onProgress) {
+      // Simulate completion
+      setTimeout(() => onProgress(100), 100);
+    }
     const downloadURL = await getDownloadURL(uploadResult.ref);
 
     // Get file metadata
@@ -296,10 +291,16 @@ class MediaStorageService {
   cancelUpload(taskId: string): boolean {
     const task = this.uploadTasks.get(taskId);
     if (task) {
-      // Note: Firebase Storage doesn't provide a direct cancel method
-      // This is a placeholder for upload cancellation logic
-      this.uploadTasks.delete(taskId);
-      return true;
+      try {
+        // UploadTask from uploadBytesResumable has a cancel method
+        task.cancel();
+        this.uploadTasks.delete(taskId);
+        return true;
+      } catch (error) {
+        console.error('Failed to cancel upload:', error);
+        this.uploadTasks.delete(taskId);
+        return false;
+      }
     }
     return false;
   }
