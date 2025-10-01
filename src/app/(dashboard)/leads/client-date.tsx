@@ -8,11 +8,12 @@ export function ClientDate({ date }: { date?: Date }) {
   const [formattedDate, setFormattedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (date) {
-      setFormattedDate(format(new Date(date), 'MMM d, yyyy'));
-    } else {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       setFormattedDate('N/A');
+      return;
     }
+
+    setFormattedDate(format(date, 'MMM d, yyyy'));
   }, [date]);
 
   return <>{formattedDate || '...'}</>;
