@@ -18,14 +18,16 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { MoreHorizontal, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { deleteCampaignAction } from '@/lib/actions';
 import { EditCampaignWrapper } from '@/app/(dashboard)/campaigns/edit-campaign-wrapper';
 import { DeleteDialogWrapper } from '@/components/delete-dialog-wrapper';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ClientDate } from '@/app/(dashboard)/campaigns/client-date';
 
 
@@ -41,6 +43,77 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
   const getClientName = (clientId: string) => {
     return leads.find((l) => l.id === clientId)?.leadName || 'Unknown';
   };
+
+  const isDataUrl = (url: string): boolean => {
+    return url.startsWith('data:image/');
+  };
+
+  const downloadImage = useCallback((url: string, filename: string) => {
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Could not download image.');
+    }
+  }, []);
+
+  const copyImageToClipboard = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Image link copied to clipboard!');
+    } catch (error) {
+      console.error('Copy failed:', error);
+      alert('Could not copy image link.');
+    }
+  }, []);
+
+  const handleImageInteraction = useCallback((url: string | undefined, campaignName: string) => {
+    if (!url) {
+      console.warn('No URL provided for image');
+      return;
+    }
+
+    if (isDataUrl(url)) {
+      // For Data URLs, download the image
+      const filename = `${campaignName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.jpg`;
+      downloadImage(url, filename);
+    } else {
+      // For regular URLs, try to open in new tab
+      try {
+        // Ensure the URL is properly formatted
+        let fullUrl = url;
+
+        // If it's a relative URL, make it absolute
+        if (url.startsWith('/')) {
+          fullUrl = `${window.location.origin}${url}`;
+        }
+        // If it doesn't have a protocol, add https://
+        else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          fullUrl = `https://${url}`;
+        }
+
+        // Validate URL format
+        const urlObj = new URL(fullUrl);
+
+        // Open in new tab
+        const newWindow = window.open(fullUrl, '_blank');
+
+        // Fallback if popup is blocked
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn('Popup blocked, copying to clipboard');
+          copyImageToClipboard(fullUrl);
+        }
+      } catch (error) {
+        console.error('Invalid URL:', url, error);
+        copyImageToClipboard(url);
+      }
+    }
+  }, [downloadImage, copyImageToClipboard]);
 
   const campaigns = allCampaigns.filter(campaign => {
     if (!search) return true;
@@ -110,7 +183,7 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <EditCampaignWrapper campaign={campaign} screens={screens} />
+                                <EditCampaignWrapper campaign={campaign} screens={screens} leads={leads} />
                                 <DeleteDialogWrapper
                                 onConfirm={async () => {
                                     await deleteCampaignAction(campaign.id);
@@ -145,6 +218,54 @@ export function CampaignsPageContent({ allCampaigns, leads, screens }: { allCamp
                                     <div>
                                         <div className="font-bold">End Date</div>
                                         <div><ClientDate date={campaign.endDate} /></div>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <div className="font-bold">Campaign Creative</div>
+                                        <div className="mt-2">
+                                            {campaign.mediaURL ? (
+                                                <div
+                                                    className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                                                    onClick={() => handleImageInteraction(campaign.mediaURL, campaign.campaignName)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            handleImageInteraction(campaign.mediaURL, campaign.campaignName);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Image
+                                                        src={campaign.mediaURL}
+                                                        alt={`${campaign.campaignName} creative`}
+                                                        width={150}
+                                                        height={150}
+                                                        className="rounded-lg border border-border object-cover pointer-events-none"
+                                                        onError={(e) => {
+                                                            console.error('Image failed to load:', campaign.mediaURL);
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                        }}
+                                                    />
+                                                    <div className="text-xs text-muted-foreground mt-1 text-center">
+                                                        {campaign.mediaURL && isDataUrl(campaign.mediaURL) ? 'Click to download' : 'Click to view full size'}
+                                                    </div>
+                                                    <div className="hidden w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
+                                                        <div className="text-center">
+                                                            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                            <div className="text-sm">Failed to load</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="w-[150px] h-[150px] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
+                                                    <div className="text-center">
+                                                        <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                        <div className="text-sm">No image uploaded</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </TableCell>
