@@ -3,9 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { Campaign, Lead, Screen, AccountEntry, Notification, Admin, Task, Reminder } from './types';
 import * as data from './data';
-import { adScreenCompatibilityChecker } from '@/ai/flows/ad-screen-compatibility-checker';
-import { contractExpiryNotification } from '@/ai/flows/contract-expiry-notification';
-import { leadFollowUpNotification } from '@/ai/flows/lead-followup-notification';
+// Removed missing AI flow imports
 import { differenceInDays, isToday } from 'date-fns';
 
 // Screen Actions
@@ -174,19 +172,21 @@ export async function saveCampaign(formData: FormData) {
 
   const campaignName = formData.get('campaignName') as string;
   const clientId = formData.get('clientId') as string;
+  const clientName = formData.get('clientName') as string;
   const category = formData.get('category') as string;
   const mediaType = formData.get('mediaType') as 'image' | 'video';
   const startDate = formData.get('startDate') as string;
   const endDate = formData.get('endDate') as string;
   const amount = formData.get('amount') as string;
 
-  if (!campaignName || !clientId || !mediaType || !startDate || !endDate || !amount) {
-    return { success: false, message: 'Campaign Name, Client, Media Type, Start Date, End Date, and Amount are required.' };
+  if (!campaignName || !clientName || !mediaType || !startDate || !endDate || !amount) {
+    return { success: false, message: 'Campaign Name, Client Name, Media Type, Start Date, End Date, and Amount are required.' };
   }
 
   const campaignData: Omit<Campaign, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date } = {
-    campaignName,
-    clientId,
+  campaignName,
+  clientId,
+  clientName,
     category,
     mediaType,
     mediaURL: formData.get('mediaURL') as string,
@@ -206,14 +206,26 @@ export async function saveCampaign(formData: FormData) {
   campaignData.endDate = new Date(endDate);
   
   try {
+    let resultMsg = '';
     if (id) {
+      // Get previous campaign data for comparison
+      const prevCampaign = await data.getCampaignById(id);
       await data.updateCampaign(id, campaignData as Partial<Campaign>);
+      // Check if file fields changed
+  const fileFields = ['mediaURL', 'mediaStoragePath', 'mediaUrl', 'mediaThumbnailUrl'] as const;
+  const fileChanged = fileFields.some(field => (prevCampaign as any)[field] !== (campaignData as any)[field]);
+      if (fileChanged) {
+        resultMsg = 'Campaign updated successfully with new file.';
+      } else {
+        resultMsg = 'Campaign updated successfully.';
+      }
     } else {
       await data.addCampaign(campaignData as Omit<Campaign, 'id'>);
+      resultMsg = 'Campaign created successfully.';
     }
     revalidatePath('/campaigns');
     revalidatePath('/screens');
-    return { success: true, message: `Campaign ${id ? 'updated' : 'created'} successfully.` };
+    return { success: true, message: resultMsg };
   } catch (error) {
     return { success: false, message: 'An error occurred while saving the campaign.' };
   }
@@ -389,14 +401,19 @@ export async function checkAdScreenCompatibility(adId: string, screenIds: string
     
     const allScreens = await data.getScreens();
 
-    const result = await adScreenCompatibilityChecker({
-        adId,
-        screenIds,
-        validScreenIds: allScreens.map(screen => screen.id),
-
-    });
-
-    return result;
+  // Stub compatibility check: screens are valid if all are in validScreenIds
+  const validScreenIds = allScreens.map(screen => screen.id);
+  const invalidScreenIds = screenIds.filter(id => !validScreenIds.includes(id));
+  return {
+    adId,
+    screenIds,
+    validScreenIds,
+    invalidScreenIds,
+    isValid: invalidScreenIds.length === 0,
+    message: invalidScreenIds.length === 0
+      ? 'All selected screens are valid for this campaign.'
+      : 'Some screens are not compatible.',
+  };
 }
 
 export async function generateExpiryNotifications() {
@@ -415,40 +432,26 @@ export async function generateExpiryNotifications() {
   for (const campaign of expiringCampaigns) {
     const lead = allLeads.find(l => l.id === campaign.clientId);
     if (!lead || !lead.assignedTo) continue;
-    
     const admin = allAdmins.find(a => a.id === lead.assignedTo);
     if (!admin) continue;
-
     const screenNames = campaign.assignedScreens.map(sId => {
       const screen = allScreens.find(s => s.id === sId);
       return screen ? screen.venueName : 'Unknown Screen';
     });
-
     const notificationTypes: ('Email' | 'WhatsApp' | 'SMS')[] = ['Email', 'WhatsApp', 'SMS'];
-    
     for (const type of notificationTypes) {
       try {
-        const result = await contractExpiryNotification({
-          notificationType: type,
-          contractId: campaign.id,
-          clientName: lead.leadName,
-          companyName: lead.companyName,
-          screenNames: screenNames,
-          endDate: campaign.endDate.toLocaleDateString(),
-          amount: campaign.amount,
-        });
-
+        // AI notification removed; stub message
         await data.addNotification({
           type: type,
-          message: result.notificationMessage,
+          message: `Contract for ${lead.leadName} (${campaign.id}) expires soon.`,
           recipient: admin.id,
           status: 'Pending',
           sentAt: new Date(),
         });
         generatedCount++;
-
       } catch (error) {
- console.error(`Failed to generate ${type} notification for campaign ${campaign.id}:`, error);
+        console.error(`Failed to generate ${type} notification for campaign ${campaign.id}:`, error);
       }
     }
   }
@@ -467,19 +470,14 @@ export async function generateFollowUpNotifications() {
   );
 
   for (const lead of leadsForFollowUp) {
-     if (!lead.assignedTo) continue;
+    if (!lead.assignedTo) continue;
     const admin = allAdmins.find(a => a.id === lead.assignedTo);
     if (!admin) continue;
-
     try {
-      const result = await leadFollowUpNotification({
-        leadName: lead.leadName,
-        adminName: admin.name,
-      });
-
+      // AI follow-up notification removed; stub message
       await data.addNotification({
         type: 'FollowUp',
-        message: result.notificationMessage,
+        message: `Follow-up required for ${lead.leadName}.`,
         recipient: admin.id,
         status: 'Pending',
         sentAt: new Date(),

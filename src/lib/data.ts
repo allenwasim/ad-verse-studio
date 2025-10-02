@@ -1,3 +1,10 @@
+// Get single campaign by ID
+export async function getCampaignById(id: string): Promise<Campaign | null> {
+    const docRef = doc(db, 'campaigns', id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return null;
+    return convertTimestamps({ ...docSnap.data(), id: docSnap.id }) as Campaign;
+}
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { AccountEntry, Campaign, Lead, Screen, Admin, Task, Notification, Reminder } from './types';

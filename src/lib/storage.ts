@@ -176,8 +176,6 @@ class MediaStorageService {
       }
     }
 
-    // Clean up task tracking
-    this.uploadTasks.delete(taskId);
 
     return {
       downloadURL,

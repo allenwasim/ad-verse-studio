@@ -38,6 +38,7 @@ export type Campaign = {
   id: string;
   campaignName: string;
   clientId: string; // reference to Lead ID
+  clientName?: string; // independent client name
   category?: string;
   mediaType: 'image' | 'video';
   mediaURL: string; // Legacy field for backward compatibility
